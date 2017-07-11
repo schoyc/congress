@@ -4,9 +4,9 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 
 import requests
-import util
-import votes as vts
-import facebook as fb
+import congress_app.modules.util
+import congress_app.modules.votes as vts
+import congress_app.modules.facebook as fb
 
 SUNLIGHT_API = "https://congress.api.sunlightfoundation.com"
 VOTES = SUNLIGHT_API + "/votes"
@@ -80,5 +80,6 @@ def updateVotes(request):
             vote_time = util.toDatetime(vote["voted_at"])
             if vote_time > last_vote_time:
                 # TODO: save vote in database
+                continue
             else:
                 break
