@@ -16,11 +16,17 @@ class Representative(Legislator):
     district = models.PositiveIntegerField()
 
     def districtKey(self):
-        return "US:" + self.state + "%02d" % district
+        return "US:" + self.state + "%02d" % self.district
+
+    def __str__(self):
+        return "Rep. " + self.first_name + " " + self.last_name
 
 class Senator(Legislator):
     election_year = models.DateField()
     stateRegionKey = models.PositiveIntegerField()
 
     def districtKey(self):
-        return stateRegionKey
+        return self.stateRegionKey
+
+    def __str__(self):
+        return "Sen. " + self.first_name + " " + self.last_name

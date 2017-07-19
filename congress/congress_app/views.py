@@ -24,12 +24,15 @@ def publishDailyVotes(request):
     senators = []
 
     if 'reps' in request.POST:
-        legislators = request.POST['reps'].split(",")
+        for rep_id in request.POST['reps'].split(","):
+            print("ID", rep_id)
+            representatives.append(Representative.objects.get(bioguide_id=rep_id))
     else:
         representatives = Representative.objects.all()
 
     if 'sens' in request.POST:
-        legislators = request.POST['sens'].split(",")
+        for sen_id in request.POST['sens'].split(","):
+            senators.append(Senator.objects.get(bioguide_id=sen_id))
     else:
         senators = Senator.objects.all()
 
@@ -39,8 +42,10 @@ def publishDailyVotes(request):
     for rep in representatives:
         rep_id = rep.bioguide_id
         votes = vts.getBillVotes(rep_id)
+        response["votes"] = votes
 
         success = fb.makeDailyVotesPost(votes, rep)
+        response["success"] = success
         if not success:
             error_reps.append(rep_id)
 
@@ -56,6 +61,7 @@ def publishDailyVotes(request):
 
     response["reps"] = ",".join(error_reps)
     response["sens"] = ",".join(error_senators)
+
 
     return JsonResponse(response)
 
