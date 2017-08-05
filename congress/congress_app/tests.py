@@ -4,6 +4,7 @@ from django.test import Client
 
 from .models import Legislator, Representative, Senator
 import datetime
+import os
 
 # Create your tests here.
 class PublishVotesTestCase(TestCase):
@@ -13,6 +14,12 @@ class PublishVotesTestCase(TestCase):
         rep.save()
 
         c = Client()
-        response = c.post('/congress/publish_votes/posts', {'reps' : 'S001193'})
+        response = c.post('/congress/publish_votes/posts', {'reps' : 'S001193', 'sens' : ''})
         print("Response type:" + str(type(response)))
         self.assertIs(len(response.json()['reps']) == 0, True)
+
+    def test_messenger_verify(self):
+        c = Client()
+        response = c.get('/congress/messenger-bot', {'hub.mode' : 'subscribe', 'hub.challenge' : '123456', 'hub.verify_token' : os.environ['FB_VERIFY_TOKEN']})
+
+        self.assertIs(response.status_code == 200, True)

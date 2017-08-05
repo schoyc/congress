@@ -50,6 +50,6 @@ def makeDailyVotesPost(votes, legislator):
 
     response = requests.post(FB_API + PAGE_POST_ENDPT, data=params)
 
-    # success = "id" in response.json()
-    print(response.json)
-    return response.json
+    success = "id" in response.json()
+    print(response.json())
+    return success

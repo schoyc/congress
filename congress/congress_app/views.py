@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 
 import requests
+import os
+
 import congress_app.modules.util
 import congress_app.modules.votes as vts
 import congress_app.modules.facebook as fb
@@ -24,15 +26,19 @@ def publishDailyVotes(request):
     senators = []
 
     if 'reps' in request.POST:
-        for rep_id in request.POST['reps'].split(","):
-            print("ID", rep_id)
-            representatives.append(Representative.objects.get(bioguide_id=rep_id))
+        reps = request.POST['reps']
+        if reps != '':
+            for rep_id in reps.split(","):
+                print("ID", rep_id)
+                representatives.append(Representative.objects.get(bioguide_id=rep_id))
     else:
         representatives = Representative.objects.all()
 
     if 'sens' in request.POST:
-        for sen_id in request.POST['sens'].split(","):
-            senators.append(Senator.objects.get(bioguide_id=sen_id))
+        sens = request.POST['sens']
+        if sens != '':
+            for sen_id in sens.split(","):
+                senators.append(Senator.objects.get(bioguide_id=sen_id))
     else:
         senators = Senator.objects.all()
 
@@ -42,7 +48,7 @@ def publishDailyVotes(request):
     for rep in representatives:
         rep_id = rep.bioguide_id
         votes = vts.getBillVotes(rep_id)
-        response["votes"] = votes
+        # response["votes"] = votes
 
         success = fb.makeDailyVotesPost(votes, rep)
         response["success"] = success
@@ -61,9 +67,20 @@ def publishDailyVotes(request):
 
     response["reps"] = ",".join(error_reps)
     response["sens"] = ",".join(error_senators)
-
+    print("RESPONSE: " + str(response))
 
     return JsonResponse(response)
+
+def messengerBot(request):
+    try:
+        if request.GET['hub.mode'] == 'subscribe' and request.GET['hub.verify_token'] == os.environ['FB_VERIFY_TOKEN']:
+            return HttpResponse(request.GET['hub.challenge'])
+    except KeyError as e:
+        print(e)
+        response = HttpResponse()
+        response.status_code = 400
+        return response
+
 
 def getVotesForLegislator(request, legislator_id):
     results = vts.getBillVotes(legislator_id)
