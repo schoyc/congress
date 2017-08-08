@@ -9,6 +9,7 @@ import os
 import congress_app.modules.util
 import congress_app.modules.votes as vts
 import congress_app.modules.facebook as fb
+import congress_app.modules.messenger as messenger
 
 SUNLIGHT_API = "https://congress.api.sunlightfoundation.com"
 VOTES = SUNLIGHT_API + "/votes"
@@ -72,14 +73,29 @@ def publishDailyVotes(request):
     return JsonResponse(response)
 
 def messengerBot(request):
-    try:
-        if request.GET['hub.mode'] == 'subscribe' and request.GET['hub.verify_token'] == os.environ['FB_VERIFY_TOKEN']:
-            return HttpResponse(request.GET['hub.challenge'])
-    except KeyError as e:
-        print(e)
-        response = HttpResponse()
-        response.status_code = 400
-        return response
+    if request.method == "GET":
+        try:
+            if request.GET['hub.mode'] == 'subscribe' and request.GET['hub.verify_token'] == os.environ['FB_VERIFY_TOKEN']:
+                return HttpResponse(request.GET['hub.challenge'])
+        except KeyError as e:
+            print(e)
+            response = HttpResponse()
+            response.status_code = 400
+            return response
+
+    elif request.method == "POST":
+        data = request.POST
+        if data["object"] == 'page':
+            for entry in data["entry"]:
+                pageID = entry["id"]
+                entryTime = entry["time"]
+
+                for event in entry["messaging"]:
+                    messenger.respondToMessageEvent(event)
+
+            # send back success
+            return HttpResponse()
+
 
 
 def getVotesForLegislator(request, legislator_id):

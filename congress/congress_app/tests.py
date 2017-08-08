@@ -6,6 +6,8 @@ from .models import Legislator, Representative, Senator
 import datetime
 import os
 
+import congress_app.modules.google as google
+
 # Create your tests here.
 class PublishVotesTestCase(TestCase):
 
@@ -23,3 +25,10 @@ class PublishVotesTestCase(TestCase):
         response = c.get('/congress/messenger-bot', {'hub.mode' : 'subscribe', 'hub.challenge' : '123456', 'hub.verify_token' : os.environ['FB_VERIFY_TOKEN']})
 
         self.assertIs(response.status_code == 200, True)
+
+class GoogleCallsTestCase(TestCase):
+
+    def test_address_to_districts(self):
+        state, district = google.addressToDistricts("1 Hacker Way, Menlo Park, CA")
+        self.assertIs(state == 'CA', True)
+        self.assertIs(district == '14', True)

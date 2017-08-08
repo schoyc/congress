@@ -1,36 +1,15 @@
 import requests
 import congress_app.modules.votes as vts
+import os
 
 PAGE_ID = "1586021568096378"
-ACCESS_TOKEN = "EAACHhwdFok0BAG4LyqnUp3Q5Hl2AHHTwrHRSWMEb2DUBZCjZA8i1C1ql1eMYM7YvOwj7y5Vg9OanhM9sYXTPOJVa4jZAlu8POzweC4tmZAWzr0fBCGw8jlydB325jPQwwv6WhpzVXLFHvWtaVhXrzpgRxF1JX83JZB9iI1yXdmGwFHYuaBWT5"
+ACCESS_TOKEN = os.environ["FB_CONGRESS_ACCESS_TOKEN"]
 FB_API = "https://graph.facebook.com/v2.9"
 PAGE_POST_ENDPT = "/" + PAGE_ID + "/feed"
+MESSAGE_POST_ENDPT = "/me/messages"
 
 def makeDailyVotesPost(votes, legislator):
-    # 1) Create message for post
-    #TODO: Replace legislator name with their FB page
-    message = str(legislator) + " just voted:\n"
-
-    # Sort votes into "yea's", "no's", and "not voting"
-    # print("VOTES:")
-    # print(votes)
-    yes_votes, no_votes, abstentions = vts.votesByType(votes)
-
-    headers_to_votes = {
-        "YES on\n" : yes_votes,
-        "NO on\n" : no_votes,
-        "ABSTAINED from voting on\n" : abstentions
-    }
-
-    for header, votes in headers_to_votes.items():
-        message += header
-        for vote in votes:
-            bill = vote["bill"]
-            title = bill["short_title"]
-            if title == None:
-                title = bill["official_title"]
-            message += title + "\n"
-        message += "\n"
+    post = votesBlurb(votes, legislator)
 
     # 2) Target post to only those in district/state
     targeting = {}
@@ -44,7 +23,7 @@ def makeDailyVotesPost(votes, legislator):
 
     # 3) Build request to post to feed (https://developers.facebook.com/docs/graph-api/reference/v2.9/page/feed#publish)
     params = {}
-    params["message"] = message
+    params["message"] = post
     params["targeting"] = targeting
     params["access_token"] = ACCESS_TOKEN
 
@@ -53,3 +32,48 @@ def makeDailyVotesPost(votes, legislator):
     success = "id" in response.json()
     print(response.json())
     return success
+
+def sendVotesMessage(votes, legislator, user):
+    text = votesBlurb(votes, legislator)
+
+    payload = {}
+
+    recipient = {"id" : user}
+    message = {"text" : text}
+    #TODO: Add links to bills
+
+    payload["recipient"] = recipient
+    payload["message"] = message
+
+    response = requests.post(FB_API + MESSAGE_POST_ENDPT, data=payload, params={"access_token" : ACCESS_TOKEN})
+    success = "message_id" in response.json()
+
+    return success
+
+def votesBlurb(votes, legislator):
+    # 1) Create message for post
+    #TODO: Replace legislator name with their FB page
+    message = str(legislator) + " just voted:\n"
+
+    # Sort votes into "yea's", "no's", and "not voting"
+    # print("VOTES:")
+    # print(votes)
+    yes_votes, no_votes, abstentions = vts.votesByType(votes)
+
+    headers_to_votes = [
+        ("YES on\n", yes_votes),
+        ("NO on\n", no_votes),
+        ("ABSTAINED from voting on\n", abstentions)
+    ]
+
+    for header, votes in headers_to_votes:
+        message += header
+        for vote in votes:
+            bill = vote["bill"]
+            title = bill["short_title"]
+            if title == None:
+                title = bill["official_title"]
+            message += title + "\n"
+        message += "\n"
+
+    return message
